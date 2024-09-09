@@ -178,6 +178,8 @@ impl<BO: ByteOrder + 'static> VtkParser<BO> {
             |(offsets, connectivity)| VertexNumbers::XML {
                 offsets,
                 connectivity,
+                faces: None,
+                faceoffsets: None,
             },
         )(input)
     }

@@ -584,7 +584,7 @@ mod write_vtk_impl {
                         // Write CELLS structure.
                         if version.0 >= 5 {
                             // From version 5 and on the cells are written as an offsets and connectivity pair.
-                            let (connectivity, offsets) = cells.cell_verts.into_xml();
+                            let (connectivity, offsets, _, _) = cells.cell_verts.into_xml();
 
                             writeln!(self, "\nCELLS {} {}", offsets.len(), connectivity.len())
                                 .map_err(|_| {

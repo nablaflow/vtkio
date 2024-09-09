@@ -1115,6 +1115,8 @@ fn triangle_vtkidtype_test() {
                 cell_verts: VertexNumbers::XML {
                     connectivity: vec![1, 2, 0],
                     offsets: vec![0, 3],
+                    faces: None,
+                    faceoffsets: None,
                 },
                 types: vec![CellType::Triangle],
             },
