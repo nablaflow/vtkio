@@ -1380,6 +1380,8 @@ pub enum VertexNumbers {
         /// Some file (in particular Legacy type VTK files version 5 and higher) include a leading zero,
         /// however, XML files typically do not.
         offsets: Vec<u64>,
+        faces: Option<Vec<i64>>,
+        faceoffsets: Option<Vec<i64>>,
     },
 }
 
@@ -1388,6 +1390,8 @@ impl Default for VertexNumbers {
         VertexNumbers::XML {
             connectivity: Vec::new(),
             offsets: Vec::new(),
+            faces: None,
+            faceoffsets: None,
         }
     }
 }
@@ -1430,6 +1434,7 @@ impl VertexNumbers {
             VertexNumbers::XML {
                 connectivity,
                 offsets,
+                ..
             } => {
                 let num_cells = offsets.len();
                 let num_verts = connectivity.len();
@@ -1450,7 +1455,7 @@ impl VertexNumbers {
     /// Converts `self` into `XML` format.
     ///
     /// Returns a connectivity and offsets array pair as in the `XML` variant.
-    pub fn into_xml(self) -> (Vec<u64>, Vec<u64>) {
+    pub fn into_xml(self) -> (Vec<u64>, Vec<u64>, Option<Vec<i64>>, Option<Vec<i64>>) {
         match self {
             VertexNumbers::Legacy {
                 num_cells,
@@ -1475,12 +1480,14 @@ impl VertexNumbers {
                 }
                 assert_eq!(connectivity.len(), num_verts - num_cells);
                 assert_eq!(offsets.len(), num_cells);
-                (connectivity, offsets)
+                (connectivity, offsets, None, None)
             }
             VertexNumbers::XML {
                 connectivity,
                 offsets,
-            } => (connectivity, offsets),
+                faces,
+                faceoffsets,
+            } => (connectivity, offsets, faces, faceoffsets),
         }
     }
 }

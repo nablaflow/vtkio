@@ -382,7 +382,9 @@ impl Vtk {
     ///         points: vec![0.0f32, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0].into(),
     ///         polys: Some(VertexNumbers::XML {
     ///             connectivity: vec![0, 1, 2],
-    ///             offsets: vec![3]
+    ///             offsets: vec![3],
+    ///             faces: None,
+    ///             faceoffsets: None
     ///         }),
     ///         data: Attributes::new(),
     ///         ..Default::default()

@@ -134,6 +134,8 @@ fn make_test_file(leading_zero_offset: bool) -> Vtk {
                         13, 15, 13, 11, 16, 15, 13, 16, 11, 0, 16, 0, 4, 16, 6, 12, 17, 12, 15, 17,
                         4, 15, 16, 0, 1, 2, 3,
                     ],
+                    faces: None,
+                    faceoffsets: None,
                 },
                 types: vec![
                     vec![CellType::Line; 12],

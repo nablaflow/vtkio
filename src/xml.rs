@@ -845,11 +845,15 @@ mod topo {
             let mut connectivity = None;
             let mut offsets = None;
             let mut types = None;
+            let mut faces = None;
+            let mut faceoffsets = None;
             while let Some((_, field)) = map.next_entry::<Field, DataArray>()? {
                 match field.name.as_str() {
                     "connectivity" => connectivity = Some(field),
                     "offsets" => offsets = Some(field),
                     "types" => types = Some(field),
+                    "faces" => faces = Some(field),
+                    "faceoffsets" => faceoffsets = Some(field),
                     _ => return Err(make_err()),
                 }
             }
@@ -861,6 +865,8 @@ mod topo {
                 connectivity,
                 offsets,
                 types,
+                faces,
+                faceoffsets,
             })
         }
     }
@@ -1508,12 +1514,16 @@ pub struct Cells {
     offsets: DataArray,
     #[serde(rename = "DataArray")]
     types: DataArray,
+    #[serde(rename = "DataArray", skip_serializing_if = "Option::is_none")]
+    faces: Option<DataArray>,
+    #[serde(rename = "DataArray", skip_serializing_if = "Option::is_none")]
+    faceoffsets: Option<DataArray>,
 }
 
 impl Cells {
     fn from_model_cells(cells: model::Cells, ei: EncodingInfo) -> Cells {
         let model::Cells { cell_verts, types } = cells;
-        let (connectivity, offsets) = cell_verts.into_xml();
+        let (connectivity, offsets, faces, faceoffsets) = cell_verts.into_xml();
         Cells {
             connectivity: DataArray::from_io_buffer(connectivity.into(), ei)
                 .with_name("connectivity"),
@@ -1526,6 +1536,16 @@ impl Cells {
                 ei,
             )
             .with_name("types"),
+            faces: if let Some(faces) = faces {
+                Some(DataArray::from_io_buffer(faces.into(), ei).with_name("faces"))
+            } else {
+                None
+            },
+            faceoffsets: if let Some(faceoffsets) = faceoffsets {
+                Some(DataArray::from_io_buffer(faceoffsets.into(), ei).with_name("faceoffsets"))
+            } else {
+                None
+            },
         }
     }
 
@@ -1567,10 +1587,31 @@ impl Cells {
             .into_io_buffer(num_vertices, appended, ei)?
             .cast_into();
         let connectivity = connectivity.ok_or_else(|| ValidationError::InvalidDataFormat)?;
+        let (faceoffsets, faces) =
+            if let (Some(faceoffsets), Some(faces)) = (self.faceoffsets, self.faces) {
+                let faceoffsets = faceoffsets
+                    .into_io_buffer(l, appended, ei)?
+                    .cast_into()
+                    .ok_or_else(|| ValidationError::InvalidDataFormat)?;
+                // NOTE: https://gitlab.kitware.com/vtk/vtk/-/blob/a963efda0a45b9b72210a4f9af0e73cd77e9172b/IO/XML/vtkXMLUnstructuredDataReader.cxx#L968-982
+                let faces_len = *faceoffsets
+                    .iter()
+                    .max()
+                    .ok_or_else(|| ValidationError::InvalidDataFormat)?;
+                let faces = faces
+                    .into_io_buffer(faces_len as usize, appended, ei)?
+                    .cast_into()
+                    .ok_or_else(|| ValidationError::InvalidDataFormat)?;
+                (Some(faceoffsets), Some(faces))
+            } else {
+                (None, None)
+            };
         Ok(model::Cells {
             cell_verts: model::VertexNumbers::XML {
                 connectivity,
                 offsets,
+                faces,
+                faceoffsets
             },
             types,
         })
@@ -1588,7 +1629,7 @@ pub struct Topo {
 impl Topo {
     /// Convert model topology type into `Topo`.
     fn from_model_topo(topo: model::VertexNumbers, ei: EncodingInfo) -> Topo {
-        let (connectivity, offsets) = topo.into_xml();
+        let (connectivity, offsets, _, _) = topo.into_xml();
         Topo {
             connectivity: DataArray::from_io_buffer(connectivity.into(), ei)
                 .with_name("connectivity"),
@@ -1620,6 +1661,8 @@ impl Topo {
         Ok(model::VertexNumbers::XML {
             connectivity: connectivity.ok_or_else(|| ValidationError::InvalidDataFormat)?,
             offsets,
+            faces: None,
+            faceoffsets: None,
         })
     }
 }
